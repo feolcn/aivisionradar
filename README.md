@@ -78,6 +78,20 @@ docker compose up --build
 
 访问 http://localhost:8000
 
+### 方式三：群晖 NAS + Cloudflare Tunnel（推荐自托管）
+
+无需公网 IP，无需开放路由器端口，通过 Cloudflare 免费内网穿透实现外网 HTTPS 访问。
+
+```bash
+# 在 NAS SSH 中执行
+git clone https://github.com/feolcn/aivisionradar.git
+cd aivisionradar
+cp .env.example .env  # 填入 CLOUDFLARE_TUNNEL_TOKEN
+docker compose -f docker-compose.synology.yml up -d --build
+```
+
+详细步骤见 [docs/deploy-synology.md](docs/deploy-synology.md)
+
 ## 环境变量说明
 
 | 变量 | 默认值 | 说明 |
