@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · AIVisionRadar{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>今日情报雷达</h1>
+  <div class="header-actions">
+    <button class="btn btn-primary"
+      hx-post="/api/crawl/run"
+      hx-target="#crawl-result"
+      hx-swap="innerHTML"
+      hx-indicator="#crawl-spinner">
+      立即抓取
+    </button>
+    <span id="crawl-spinner" class="htmx-indicator">抓取中...</span>
+    <span id="crawl-result"></span>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-number">{{ today_count }}</div>
+    <div class="stat-label">今日抓取</div>
+  </div>
+  <div class="stat-card highlight">
+    <div class="stat-number">{{ high_score_count }}</div>
+    <div class="stat-label">高分内容 (≥5分)</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div>
+    <h2>Top 20 推荐</h2>
+    {% for item in top_items %}
+    <div class="item-card {% if item.total_score >= 10 %}high-score{% elif item.total_score >= 5 %}mid-score{% endif %}">
+      <div class="item-meta">
+        <span class="badge badge-{{ item.item_type }}">{{ item.item_type }}</span>
+        <span class="score">{{ "%.1f"|format(item.total_score) }}分</span>
+      </div>
+      <h3 class="item-title">
+        <a href="/items/{{ item.id }}">{{ item.title }}</a>
+      </h3>
+      {% if item.matched_keywords %}
+      <div class="keywords">
+        {% for kw in item.matched_keywords.split(',')[:5] %}
+        <span class="kw-tag">{{ kw.strip() }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if item.ai_summary %}
+      <p class="summary-preview">{{ item.ai_summary[:120] }}...</p>
+      {% elif item.summary_raw %}
+      <p class="summary-preview">{{ item.summary_raw[:120] }}...</p>
+      {% endif %}
+      <div class="item-actions">
+        <a href="{{ item.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">原文链接 ↗</a>
+        <a href="/items/{{ item.id }}" class="btn btn-sm">详情</a>
+      </div>
+    </div>
+    {% else %}
+    <p class="empty-state">暂无数据，请先运行抓取。</p>
+    {% endfor %}
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>关键词命中 Top 20</h3>
+      <ul class="stat-list">
+        {% for kw, count in kw_stats %}
+        <li>
+          <span class="kw-name">{{ kw }}</span>
+          <span class="kw-count">{{ count }}</span>
+        </li>
+        {% else %}
+        <li class="empty">暂无数据</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>来源统计</h3>
+      <ul class="stat-list">
+        {% for name, count in source_stats %}
+        {% if count > 0 %}
+        <li>
+          <span class="source-name">{{ name }}</span>
+          <span class="source-count">{{ count }}</span>
+        </li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

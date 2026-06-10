@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}AIVisionRadar{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">
+      <a href="/">🛰 AIVisionRadar</a>
+    </div>
+    <div class="nav-links">
+      <a href="/">首页</a>
+      <a href="/items">情报列表</a>
+      <a href="/reports/daily">日报</a>
+      <a href="/sources">信息源</a>
+      <a href="/keywords">关键词</a>
+      <a href="/docs" target="_blank">API</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>AIVisionRadar · 面向 AI 工程师的技术情报雷达 · <a href="https://github.com/aivisionradar/aivisionradar" target="_blank">GitHub</a></p>
+  </footer>
+</body>
+</html>

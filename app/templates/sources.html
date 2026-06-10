@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}信息源管理 · AIVisionRadar{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>信息源管理</h1>
+</div>
+
+<div class="form-card">
+  <h3>添加信息源</h3>
+  <form method="post" action="/sources" class="inline-form">
+    <input type="text" name="name" placeholder="名称" required class="input" />
+    <select name="type" class="select-filter" required>
+      <option value="rss">RSS</option>
+      <option value="arxiv">arXiv</option>
+      <option value="github_trending">GitHub Trending</option>
+      <option value="github_search">GitHub Search</option>
+      <option value="huggingface">Hugging Face</option>
+      <option value="custom">自定义</option>
+    </select>
+    <input type="text" name="url" placeholder="URL 或查询词" required class="input input-wide" />
+    <input type="text" name="category" placeholder="分类（可选）" class="input" />
+    <button type="submit" class="btn btn-primary">添加</button>
+  </form>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>名称</th>
+      <th>类型</th>
+      <th>URL</th>
+      <th>分类</th>
+      <th>状态</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for source in sources %}
+    <tr class="{% if not source.enabled %}disabled-row{% endif %}">
+      <td>{{ source.id }}</td>
+      <td>{{ source.name }}</td>
+      <td><span class="badge badge-{{ source.type }}">{{ source.type }}</span></td>
+      <td class="url-cell"><a href="{{ source.url }}" target="_blank" rel="noopener">{{ source.url[:60] }}{% if source.url|length > 60 %}...{% endif %}</a></td>
+      <td>{{ source.category or '-' }}</td>
+      <td>
+        <span class="status-badge {% if source.enabled %}status-active{% else %}status-disabled{% endif %}">
+          {{ '启用' if source.enabled else '禁用' }}
+        </span>
+      </td>
+      <td class="actions-cell">
+        <form method="post" action="/sources/{{ source.id }}/toggle" style="display:inline">
+          <button type="submit" class="btn btn-sm {% if source.enabled %}btn-warning{% else %}btn-success{% endif %}">
+            {{ '禁用' if source.enabled else '启用' }}
+          </button>
+        </form>
+        <form method="post" action="/sources/{{ source.id }}/delete" style="display:inline"
+          onsubmit="return confirm('确认删除？')">
+          <button type="submit" class="btn btn-sm btn-danger">删除</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="empty-state">暂无信息源</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title[:60] }} · AIVisionRadar{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/items" class="btn btn-sm btn-outline">← 返回列表</a>
+</div>
+
+<div class="detail-card">
+  <div class="item-meta">
+    <span class="badge badge-{{ item.item_type }}">{{ item.item_type }}</span>
+    <span class="score">总分 {{ "%.2f"|format(item.total_score) }}</span>
+    <span class="status-badge status-{{ item.status }}">{{ item.status }}</span>
+    {% if source %}<span class="source-name">{{ source.name }}</span>{% endif %}
+    {% if item.published_at %}
+    <span class="date">{{ item.published_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    {% endif %}
+  </div>
+
+  <h1 class="detail-title">{{ item.title }}</h1>
+
+  <div class="detail-url">
+    <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>
+  </div>
+
+  {% if item.author %}
+  <p class="detail-author">作者：{{ item.author }}</p>
+  {% endif %}
+
+  {% if item.matched_keywords %}
+  <div class="keywords">
+    {% for kw in item.matched_keywords.split(',') %}
+    <span class="kw-tag">{{ kw.strip() }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="score-grid">
+    <div class="score-item">
+      <div class="score-val">{{ "%.1f"|format(item.relevance_score) }}</div>
+      <div class="score-lbl">相关性</div>
+    </div>
+    <div class="score-item">
+      <div class="score-val">{{ "%.1f"|format(item.reproduce_score) }}</div>
+      <div class="score-lbl">复现价值</div>
+    </div>
+    <div class="score-item">
+      <div class="score-val">{{ "%.1f"|format(item.content_score) }}</div>
+      <div class="score-lbl">内容价值</div>
+    </div>
+    <div class="score-item">
+      <div class="score-val">{{ "%.1f"|format(item.monetization_score) }}</div>
+      <div class="score-lbl">变现价值</div>
+    </div>
+    {% if item.stars is not none %}
+    <div class="score-item">
+      <div class="score-val">{{ item.stars }}</div>
+      <div class="score-lbl">⭐ Stars</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if item.summary_raw %}
+  <section class="detail-section">
+    <h3>原始摘要</h3>
+    <p>{{ item.summary_raw }}</p>
+  </section>
+  {% endif %}
+
+  {% if item.ai_summary %}
+  <section class="detail-section ai-section">
+    <h3>AI 分析摘要</h3>
+    <p>{{ item.ai_summary }}</p>
+  </section>
+  {% endif %}
+
+  {% if item.why_relevant %}
+  <section class="detail-section">
+    <h3>为什么值得关注</h3>
+    <p>{{ item.why_relevant }}</p>
+  </section>
+  {% endif %}
+
+  {% if item.reproduce_suggestion %}
+  <section class="detail-section">
+    <h3>复现建议</h3>
+    <p>{{ item.reproduce_suggestion }}</p>
+  </section>
+  {% endif %}
+
+  {% if item.content_ideas %}
+  <section class="detail-section">
+    <h3>创作思路</h3>
+    <p>{{ item.content_ideas }}</p>
+  </section>
+  {% endif %}
+
+  <section class="detail-section">
+    <h3>更改状态</h3>
+    <form method="post" action="/items/{{ item.id }}/status" class="status-form">
+      <select name="status" class="select-filter">
+        <option value="new" {% if item.status == 'new' %}selected{% endif %}>新</option>
+        <option value="saved" {% if item.status == 'saved' %}selected{% endif %}>已保存</option>
+        <option value="done" {% if item.status == 'done' %}selected{% endif %}>已处理</option>
+        <option value="ignored" {% if item.status == 'ignored' %}selected{% endif %}>已忽略</option>
+      </select>
+      <button type="submit" class="btn btn-primary">更新状态</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}日报 {{ report.date }} · AIVisionRadar{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🛰 每日技术情报日报 · {{ report.date }}</h1>
+  <div class="header-actions">
+    <a href="/reports/daily.md" class="btn btn-outline">导出 Markdown</a>
+    <a href="/api/reports/daily" target="_blank" class="btn btn-outline">JSON API</a>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-number">{{ report.total_items }}</div>
+    <div class="stat-label">今日内容总数</div>
+  </div>
+  <div class="stat-card highlight">
+    <div class="stat-number">{{ report.top_items|length }}</div>
+    <div class="stat-label">Top 推荐</div>
+  </div>
+</div>
+
+{% macro item_list(items, empty_msg) %}
+{% if not items %}
+<p class="empty-state">{{ empty_msg }}</p>
+{% else %}
+{% for item in items %}
+<div class="item-card-compact">
+  <span class="score-badge">{{ "%.1f"|format(item.total_score) }}</span>
+  <a href="/items/{{ item.id }}" class="item-link">{{ item.title }}</a>
+  <a href="{{ item.url }}" target="_blank" rel="noopener" class="ext-link">↗</a>
+  {% if item.matched_keywords %}
+  <div class="kws-inline">
+    {% for kw in item.matched_keywords.split(',')[:4] %}<span class="kw-tag-sm">{{ kw.strip() }}</span>{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+<section class="report-section">
+  <h2>🔥 综合 Top 20</h2>
+  {{ item_list(report.top_items, "今日暂无高分内容") }}
+</section>
+
+<section class="report-section">
+  <h2>🛠 最值得复现</h2>
+  {{ item_list(report.top_reproduce, "暂无") }}
+</section>
+
+<section class="report-section">
+  <h2>✍️ 最值得写文章</h2>
+  {{ item_list(report.top_content, "暂无") }}
+</section>
+
+<section class="report-section">
+  <h2>🏭 最适合工业检测</h2>
+  {{ item_list(report.top_industrial, "暂无工业检测相关内容") }}
+</section>
+
+<section class="report-section">
+  <h2>⚡ 最适合 Jetson / TensorRT</h2>
+  {{ item_list(report.top_jetson, "暂无 Jetson/TensorRT 相关内容") }}
+</section>
+
+<section class="report-section">
+  <h2>🤖 最适合本地大模型 / Agent</h2>
+  {{ item_list(report.top_llm_agent, "暂无 LLM/Agent 相关内容") }}
+</section>
+{% endblock %}

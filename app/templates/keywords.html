@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}关键词管理 · AIVisionRadar{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>关键词管理</h1>
+</div>
+
+<div class="form-card">
+  <h3>添加关键词</h3>
+  <form method="post" action="/keywords" class="inline-form">
+    <input type="text" name="keyword" placeholder="关键词" required class="input" />
+    <input type="text" name="category" placeholder="分类（可选）" class="input" />
+    <input type="number" name="weight" placeholder="权重" value="1.0" step="0.5" min="0.5" max="5.0" class="input input-narrow" />
+    <button type="submit" class="btn btn-primary">添加</button>
+  </form>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>关键词</th>
+      <th>分类</th>
+      <th>权重</th>
+      <th>状态</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for kw in keywords %}
+    <tr class="{% if not kw.enabled %}disabled-row{% endif %}">
+      <td>{{ kw.id }}</td>
+      <td><strong>{{ kw.keyword }}</strong></td>
+      <td>{{ kw.category or '-' }}</td>
+      <td>{{ kw.weight }}</td>
+      <td>
+        <span class="status-badge {% if kw.enabled %}status-active{% else %}status-disabled{% endif %}">
+          {{ '启用' if kw.enabled else '禁用' }}
+        </span>
+      </td>
+      <td class="actions-cell">
+        <form method="post" action="/keywords/{{ kw.id }}/toggle" style="display:inline">
+          <button type="submit" class="btn btn-sm {% if kw.enabled %}btn-warning{% else %}btn-success{% endif %}">
+            {{ '禁用' if kw.enabled else '启用' }}
+          </button>
+        </form>
+        <form method="post" action="/keywords/{{ kw.id }}/delete" style="display:inline"
+          onsubmit="return confirm('确认删除？')">
+          <button type="submit" class="btn btn-sm btn-danger">删除</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="empty-state">暂无关键词</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

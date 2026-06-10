@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}情报列表 · AIVisionRadar{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>情报列表</h1>
+</div>
+
+<form class="filter-bar" method="get" action="/items">
+  <input type="text" name="q" value="{{ q }}" placeholder="搜索标题..." class="input-search" />
+  <select name="item_type" class="select-filter">
+    <option value="">全部类型</option>
+    <option value="article" {% if item_type == 'article' %}selected{% endif %}>文章</option>
+    <option value="paper" {% if item_type == 'paper' %}selected{% endif %}>论文</option>
+    <option value="github_repo" {% if item_type == 'github_repo' %}selected{% endif %}>GitHub 项目</option>
+    <option value="unknown" {% if item_type == 'unknown' %}selected{% endif %}>其他</option>
+  </select>
+  <select name="status" class="select-filter">
+    <option value="">全部状态</option>
+    <option value="new" {% if status == 'new' %}selected{% endif %}>新</option>
+    <option value="saved" {% if status == 'saved' %}selected{% endif %}>已保存</option>
+    <option value="ignored" {% if status == 'ignored' %}selected{% endif %}>已忽略</option>
+    <option value="done" {% if status == 'done' %}selected{% endif %}>已处理</option>
+  </select>
+  <button type="submit" class="btn btn-primary">筛选</button>
+</form>
+
+<p class="result-info">共 {{ total }} 条，第 {{ page }}/{{ pages }} 页</p>
+
+{% for item in items %}
+<div class="item-card {% if item.total_score >= 10 %}high-score{% elif item.total_score >= 5 %}mid-score{% endif %}">
+  <div class="item-meta">
+    <span class="badge badge-{{ item.item_type }}">{{ item.item_type }}</span>
+    <span class="score">{{ "%.1f"|format(item.total_score) }}分</span>
+    <span class="status-badge status-{{ item.status }}">{{ item.status }}</span>
+    {% if item.published_at %}
+    <span class="date">{{ item.published_at.strftime('%Y-%m-%d') }}</span>
+    {% endif %}
+  </div>
+  <h3 class="item-title">
+    <a href="/items/{{ item.id }}">{{ item.title }}</a>
+  </h3>
+  {% if item.matched_keywords %}
+  <div class="keywords">
+    {% for kw in item.matched_keywords.split(',')[:6] %}
+    <span class="kw-tag">{{ kw.strip() }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if item.ai_summary %}
+  <p class="summary-preview">{{ item.ai_summary[:150] }}{% if item.ai_summary|length > 150 %}...{% endif %}</p>
+  {% elif item.summary_raw %}
+  <p class="summary-preview">{{ item.summary_raw[:150] }}{% if item.summary_raw|length > 150 %}...{% endif %}</p>
+  {% endif %}
+  <div class="item-actions">
+    <a href="{{ item.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">原文 ↗</a>
+    <a href="/items/{{ item.id }}" class="btn btn-sm">详情</a>
+    <form method="post" action="/items/{{ item.id }}/status" style="display:inline">
+      <input type="hidden" name="status" value="saved" />
+      <button type="submit" class="btn btn-sm btn-success">保存</button>
+    </form>
+    <form method="post" action="/items/{{ item.id }}/status" style="display:inline">
+      <input type="hidden" name="status" value="ignored" />
+      <button type="submit" class="btn btn-sm btn-danger">忽略</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<p class="empty-state">暂无数据。</p>
+{% endfor %}
+
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="?page={{ page - 1 }}&item_type={{ item_type }}&status={{ status }}&q={{ q }}" class="btn btn-sm">上一页</a>
+  {% endif %}
+  <span>{{ page }} / {{ pages }}</span>
+  {% if page < pages %}
+  <a href="?page={{ page + 1 }}&item_type={{ item_type }}&status={{ status }}&q={{ q }}" class="btn btn-sm">下一页</a>
+  {% endif %}
+</div>
+{% endblock %}
