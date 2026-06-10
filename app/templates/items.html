@@ -37,8 +37,11 @@
     {% endif %}
   </div>
   <h3 class="item-title">
-    <a href="/items/{{ item.id }}">{{ item.title }}</a>
+    <a href="/items/{{ item.id }}">{{ item.title_zh or item.title }}</a>
   </h3>
+  {% if item.title_zh and item.title_zh != item.title %}
+  <p class="title-original">{{ item.title }}</p>
+  {% endif %}
   {% if item.matched_keywords %}
   <div class="keywords">
     {% for kw in item.matched_keywords.split(',')[:6] %}
@@ -46,7 +49,9 @@
     {% endfor %}
   </div>
   {% endif %}
-  {% if item.ai_summary %}
+  {% if item.summary_zh %}
+  <p class="summary-preview">{{ item.summary_zh[:150] }}{% if item.summary_zh|length > 150 %}...{% endif %}</p>
+  {% elif item.ai_summary %}
   <p class="summary-preview">{{ item.ai_summary[:150] }}{% if item.ai_summary|length > 150 %}...{% endif %}</p>
   {% elif item.summary_raw %}
   <p class="summary-preview">{{ item.summary_raw[:150] }}{% if item.summary_raw|length > 150 %}...{% endif %}</p>

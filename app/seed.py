@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Keyword, Source
+from app.models import Keyword, Setting, Source
 
 DEFAULT_SOURCES = [
     {"name": "NVIDIA Technical Blog", "type": "rss", "url": "https://blogs.nvidia.com/feed/", "category": "ai_hardware"},
@@ -77,6 +77,41 @@ def seed_keywords(db: Session) -> None:
     db.commit()
 
 
+DEFAULT_SETTINGS = [
+    {
+        "key": "enable_translation",
+        "value": "false",
+        "label": "中文翻译",
+        "description": "自动将英文标题和摘要翻译成中文（需要配置 AI_API_KEY）",
+        "value_type": "bool",
+    },
+    {
+        "key": "enable_ai_summary",
+        "value": "false",
+        "label": "AI 分析摘要",
+        "description": "对高分内容生成 AI 分析（需要配置 AI_API_KEY）",
+        "value_type": "bool",
+    },
+    {
+        "key": "translation_language",
+        "value": "zh-CN",
+        "label": "翻译目标语言",
+        "description": "翻译的目标语言代码（zh-CN 简体中文 / zh-TW 繁体中文）",
+        "value_type": "str",
+    },
+]
+
+
+def seed_settings(db: Session) -> None:
+    """Insert default settings if not already present."""
+    for s in DEFAULT_SETTINGS:
+        exists = db.query(Setting).filter(Setting.key == s["key"]).first()
+        if not exists:
+            db.add(Setting(**s))
+    db.commit()
+
+
 def seed_all(db: Session) -> None:
     seed_sources(db)
     seed_keywords(db)
+    seed_settings(db)

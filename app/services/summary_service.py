@@ -1,19 +1,16 @@
+import json
 import logging
 from typing import Optional
 
+import httpx
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import Item
+from app.models import Item, Setting
 
 logger = logging.getLogger(__name__)
 
-FALLBACK_TEMPLATE = """【AI摘要未启用】
-标题：{title}
-来源链接：{url}
-关键词命中：{keywords}
-
-请配置 AI_API_KEY 和 AI_BASE_URL 以启用 AI 摘要功能。"""
+FALLBACK_TEMPLATE = """【AI摘要未启用】请配置 AI_API_KEY 和 AI_BASE_URL 以启用 AI 摘要功能。"""
 
 SUMMARY_PROMPT = """你是一个面向 AI 工程师和工业视觉工程师的技术情报分析师。
 
@@ -40,33 +37,49 @@ SUMMARY_PROMPT = """你是一个面向 AI 工程师和工业视觉工程师的�
 5. reproduce_suggestion 不超过 100 字
 6. content_ideas 不超过 200 字"""
 
+TRANSLATION_PROMPT = """将以下英文标题和摘要翻译成{lang}，输出 JSON：
+
+标题：{title}
+摘要：{summary}
+
+输出格式（只输出 JSON，不要额外说明）：
+{{"title_zh": "中文标题", "summary_zh": "中文摘要（不超过150字）"}}"""
+
+
+def _get_setting(db: Session, key: str, default: str = "") -> str:
+    """Read a setting value from DB."""
+    row = db.query(Setting).filter(Setting.key == key).first()
+    return row.value if row else default
+
+
+def is_translation_enabled(db: Session) -> bool:
+    val = _get_setting(db, "enable_translation", "false")
+    return val.lower() == "true"
+
+
+def is_ai_summary_enabled(db: Session) -> bool:
+    val = _get_setting(db, "enable_ai_summary", "false")
+    return val.lower() == "true"
+
+
+def _needs_translation(item: Item) -> bool:
+    """Return True if the item title looks like it needs translation."""
+    title = item.title or ""
+    ascii_ratio = sum(1 for c in title if ord(c) < 128) / max(len(title), 1)
+    return ascii_ratio > 0.7  # mostly ASCII → likely English
+
 
 def _make_fallback(item: Item) -> dict:
     return {
-        "ai_summary": FALLBACK_TEMPLATE.format(
-            title=item.title,
-            url=item.url,
-            keywords=item.matched_keywords or "无",
-        ),
+        "ai_summary": FALLBACK_TEMPLATE,
         "why_relevant": "请配置 AI_API_KEY 以获取智能分析。",
         "reproduce_suggestion": "请配置 AI_API_KEY 以获取复现建议。",
         "content_ideas": "请配置 AI_API_KEY 以获取创作思路。",
     }
 
 
-async def _call_ai(title: str, url: str, summary: str, keywords: str) -> Optional[dict]:
-    """Call OpenAI-compatible API for summary."""
-    import json
-
-    import httpx
-
-    prompt = SUMMARY_PROMPT.format(
-        title=title,
-        url=url,
-        summary=summary[:1000] if summary else "无摘要",
-        keywords=keywords or "无",
-    )
-
+async def _call_ai(prompt: str, max_tokens: int = 800) -> Optional[dict]:
+    """Call OpenAI-compatible API and parse JSON response."""
     headers = {
         "Authorization": f"Bearer {settings.AI_API_KEY}",
         "Content-Type": "application/json",
@@ -74,26 +87,40 @@ async def _call_ai(title: str, url: str, summary: str, keywords: str) -> Optiona
     payload = {
         "model": settings.AI_MODEL,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.3,
-        "max_tokens": 800,
+        "temperature": 0.2,
+        "max_tokens": max_tokens,
     }
-
     base_url = settings.AI_BASE_URL.rstrip("/")
-    url_endpoint = f"{base_url}/chat/completions"
-
     async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.post(url_endpoint, headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        content = data["choices"][0]["message"]["content"].strip()
-
-        # strip markdown code fences if present
+        resp = await client.post(f"{base_url}/chat/completions", headers=headers, json=payload)
+        resp.raise_for_status()
+        content = resp.json()["choices"][0]["message"]["content"].strip()
         if content.startswith("```"):
             content = content.split("```")[1]
             if content.startswith("json"):
                 content = content[4:]
-
         return json.loads(content)
+
+
+async def translate_item(item: Item, lang: str = "简体中文") -> Optional[dict]:
+    """Translate title and summary to Chinese. Returns {title_zh, summary_zh} or None."""
+    if not settings.AI_API_KEY:
+        return None
+    if not _needs_translation(item):
+        return None
+
+    prompt = TRANSLATION_PROMPT.format(
+        lang=lang,
+        title=item.title,
+        summary=(item.summary_raw or "")[:500],
+    )
+    try:
+        result = await _call_ai(prompt, max_tokens=400)
+        if result and "title_zh" in result:
+            return result
+    except Exception as e:
+        logger.warning("Translation failed for item %s: %s", item.id, e)
+    return None
 
 
 async def summarize_item(item: Item) -> dict:
@@ -101,13 +128,14 @@ async def summarize_item(item: Item) -> dict:
     if not settings.AI_API_KEY:
         return _make_fallback(item)
 
+    prompt = SUMMARY_PROMPT.format(
+        title=item.title,
+        url=item.url,
+        summary=(item.summary_raw or "")[:1000] or "无摘要",
+        keywords=item.matched_keywords or "无",
+    )
     try:
-        result = await _call_ai(
-            title=item.title,
-            url=item.url,
-            summary=item.summary_raw or "",
-            keywords=item.matched_keywords or "",
-        )
+        result = await _call_ai(prompt, max_tokens=800)
         if result:
             return result
     except Exception as e:
@@ -117,10 +145,60 @@ async def summarize_item(item: Item) -> dict:
 
 
 async def summarize_pending(db: Session, limit: int = 20) -> int:
-    """Summarize items that have no ai_summary yet."""
+    """Summarize and/or translate pending items based on settings."""
+    do_summary = is_ai_summary_enabled(db) and bool(settings.AI_API_KEY)
+    do_translate = is_translation_enabled(db) and bool(settings.AI_API_KEY)
+
+    if not do_summary and not do_translate:
+        logger.info("Both AI summary and translation are disabled, skipping.")
+        return 0
+
+    lang_code = _get_setting(db, "translation_language", "zh-CN")
+    lang = "繁体中文" if lang_code == "zh-TW" else "简体中文"
+
     items = (
         db.query(Item)
-        .filter(Item.ai_summary == None)  # noqa: E711
+        .filter(Item.total_score > 0)
+        .filter(
+            (Item.ai_summary == None) | (Item.title_zh == None)  # noqa: E711
+        )
+        .order_by(Item.total_score.desc())
+        .limit(limit)
+        .all()
+    )
+
+    count = 0
+    for item in items:
+        if do_summary and not item.ai_summary:
+            result = await summarize_item(item)
+            item.ai_summary = result.get("ai_summary", "")
+            item.why_relevant = result.get("why_relevant", "")
+            item.reproduce_suggestion = result.get("reproduce_suggestion", "")
+            item.content_ideas = result.get("content_ideas", "")
+
+        if do_translate and not item.title_zh:
+            trans = await translate_item(item, lang)
+            if trans:
+                item.title_zh = trans.get("title_zh", "")
+                item.summary_zh = trans.get("summary_zh", "")
+
+        count += 1
+
+    db.commit()
+    return count
+
+
+async def translate_pending(db: Session, limit: int = 50) -> int:
+    """Translate items that have no title_zh yet."""
+    if not settings.AI_API_KEY:
+        return 0
+
+    lang_code = _get_setting(db, "translation_language", "zh-CN")
+    lang = "繁体中文" if lang_code == "zh-TW" else "简体中文"
+
+    items = (
+        db.query(Item)
+        .filter(Item.title_zh == None)  # noqa: E711
         .filter(Item.total_score > 0)
         .order_by(Item.total_score.desc())
         .limit(limit)
@@ -129,12 +207,11 @@ async def summarize_pending(db: Session, limit: int = 20) -> int:
 
     count = 0
     for item in items:
-        result = await summarize_item(item)
-        item.ai_summary = result.get("ai_summary", "")
-        item.why_relevant = result.get("why_relevant", "")
-        item.reproduce_suggestion = result.get("reproduce_suggestion", "")
-        item.content_ideas = result.get("content_ideas", "")
-        count += 1
+        trans = await translate_item(item, lang)
+        if trans:
+            item.title_zh = trans.get("title_zh", "")
+            item.summary_zh = trans.get("summary_zh", "")
+            count += 1
 
     db.commit()
     return count

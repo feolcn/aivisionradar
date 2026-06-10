@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}设置 · AIVisionRadar{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>系统设置</h1>
+</div>
+
+<div class="settings-grid">
+
+  <!-- AI 状态卡片 -->
+  <div class="settings-card">
+    <h3>AI 服务状态</h3>
+    <div class="ai-status {% if has_ai_key %}ai-ok{% else %}ai-off{% endif %}">
+      {% if has_ai_key %}
+      ✅ AI API 已配置（模型：{{ ai_model }}）
+      {% else %}
+      ⚠️ 未配置 AI_API_KEY，翻译和 AI 摘要不可用
+      {% endif %}
+    </div>
+    {% if not has_ai_key %}
+    <p class="hint">在 <code>.env</code> 文件中设置 <code>AI_API_KEY</code>、<code>AI_BASE_URL</code> 和 <code>AI_MODEL</code> 后重启服务。</p>
+    {% endif %}
+  </div>
+
+  <!-- 功能开关 -->
+  <div class="settings-card">
+    <h3>功能开关</h3>
+
+    {% for s in all_settings if s.value_type == 'bool' %}
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">{{ s.label }}</div>
+        <div class="setting-desc">{{ s.description }}</div>
+      </div>
+      <form method="post" action="/settings/{{ s.key }}" class="toggle-form">
+        {% if s.value == 'true' %}
+          <input type="hidden" name="value" value="false" />
+          <button type="submit" class="toggle-btn toggle-on" {% if not has_ai_key %}disabled title="需要先配置 AI_API_KEY"{% endif %}>
+            开启中
+          </button>
+        {% else %}
+          <input type="hidden" name="value" value="true" />
+          <button type="submit" class="toggle-btn toggle-off" {% if not has_ai_key %}disabled title="需要先配置 AI_API_KEY"{% endif %}>
+            已关闭
+          </button>
+        {% endif %}
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- 文字设置 -->
+  <div class="settings-card">
+    <h3>翻译设置</h3>
+
+    {% for s in all_settings if s.value_type == 'str' %}
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">{{ s.label }}</div>
+        <div class="setting-desc">{{ s.description }}</div>
+      </div>
+      <form method="post" action="/settings/{{ s.key }}" class="str-form">
+        <select name="value" class="select-filter" onchange="this.form.submit()">
+          {% if s.key == 'translation_language' %}
+          <option value="zh-CN" {% if s.value == 'zh-CN' %}selected{% endif %}>简体中文</option>
+          <option value="zh-TW" {% if s.value == 'zh-TW' %}selected{% endif %}>繁體中文</option>
+          {% else %}
+          <option value="{{ s.value }}">{{ s.value }}</option>
+          {% endif %}
+        </select>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- 手动触发 -->
+  <div class="settings-card">
+    <h3>手动操作</h3>
+    <div class="action-rows">
+      <div class="action-row">
+        <div class="setting-info">
+          <div class="setting-label">立即翻译高分内容</div>
+          <div class="setting-desc">翻译 total_score > 0 且尚未翻译的前 50 条（需已开启翻译开关）</div>
+        </div>
+        <button class="btn btn-primary"
+          hx-post="/api/translate/run"
+          hx-target="#translate-result"
+          hx-swap="innerHTML"
+          hx-indicator="#translate-spinner"
+          {% if not has_ai_key %}disabled title="需要配置 AI_API_KEY"{% endif %}>
+          开始翻译
+        </button>
+        <span id="translate-spinner" class="htmx-indicator">翻译中...</span>
+      </div>
+      <div id="translate-result" class="action-result"></div>
+
+      <div class="action-row">
+        <div class="setting-info">
+          <div class="setting-label">立即生成 AI 摘要</div>
+          <div class="setting-desc">对 top 20 高分内容生成 AI 分析（需已开启 AI 摘要开关）</div>
+        </div>
+        <button class="btn btn-primary"
+          hx-post="/api/crawl/summarize"
+          hx-target="#summarize-result"
+          hx-swap="innerHTML"
+          hx-indicator="#summarize-spinner"
+          {% if not has_ai_key %}disabled title="需要配置 AI_API_KEY"{% endif %}>
+          生成摘要
+        </button>
+        <span id="summarize-spinner" class="htmx-indicator">生成中...</span>
+      </div>
+      <div id="summarize-result" class="action-result"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

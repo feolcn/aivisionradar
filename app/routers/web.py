@@ -7,9 +7,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
-from app.models import Item, Keyword, Source
+from app.models import Item, Keyword, Setting, Source
 from app.services.report_service import get_daily_report, render_markdown_report
+from app.services.summary_service import is_translation_enabled
 
 router = APIRouter(tags=["web"])
 templates = Jinja2Templates(directory="app/templates")
@@ -217,3 +219,25 @@ def daily_report_md_download(db: Session = Depends(get_db)):
     report = get_daily_report(db)
     md = render_markdown_report(report)
     return PlainTextResponse(content=md, media_type="text/markdown")
+
+
+@router.get("/settings")
+def settings_page(request: Request, db: Session = Depends(get_db)):
+    all_settings = db.query(Setting).order_by(Setting.id).all()
+    has_ai_key = bool(settings.AI_API_KEY)
+    translation_on = is_translation_enabled(db)
+    return _tmpl(request, "settings.html", {
+        "all_settings": all_settings,
+        "has_ai_key": has_ai_key,
+        "translation_on": translation_on,
+        "ai_model": settings.AI_MODEL,
+    })
+
+
+@router.post("/settings/{key}")
+def update_setting(key: str, value: str = Form(...), db: Session = Depends(get_db)):
+    row = db.query(Setting).filter(Setting.key == key).first()
+    if row:
+        row.value = value
+        db.commit()
+    return RedirectResponse(url="/settings", status_code=303)

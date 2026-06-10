@@ -6,7 +6,7 @@ import sys
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-COMMANDS = ["init-db", "seed", "crawl", "score", "summarize", "report"]
+COMMANDS = ["init-db", "seed", "crawl", "score", "summarize", "translate", "report"]
 
 
 def cmd_init_db():
@@ -65,6 +65,21 @@ def cmd_summarize():
     asyncio.run(run())
 
 
+def cmd_translate():
+    from app.db import SessionLocal
+    from app.services.summary_service import translate_pending
+
+    async def run():
+        db = SessionLocal()
+        try:
+            count = await translate_pending(db, limit=50)
+            print(f"Translated {count} items.")
+        finally:
+            db.close()
+
+    asyncio.run(run())
+
+
 def cmd_report():
     from app.db import SessionLocal
     from app.services.report_service import get_daily_report, render_markdown_report
@@ -90,6 +105,7 @@ def main():
         "crawl": cmd_crawl,
         "score": cmd_score,
         "summarize": cmd_summarize,
+        "translate": cmd_translate,
         "report": cmd_report,
     }
     dispatch[command]()

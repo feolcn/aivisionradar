@@ -69,6 +69,8 @@ class ItemOut(ItemBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
     source_id: Optional[int] = None
+    title_zh: Optional[str] = None
+    summary_zh: Optional[str] = None
     ai_summary: Optional[str] = None
     why_relevant: Optional[str] = None
     reproduce_suggestion: Optional[str] = None

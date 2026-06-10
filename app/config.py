@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     AI_API_KEY: str = ""
     AI_MODEL: str = "gpt-4o-mini"
 
+    ENABLE_TRANSLATION: bool = False
+
     CRAWL_INTERVAL_HOURS: int = 6
     DAILY_REPORT_HOUR: int = 8
 
