@@ -78,8 +78,48 @@ def _make_fallback(item: Item) -> dict:
     }
 
 
-async def _call_ai(prompt: str, max_tokens: int = 800) -> Optional[dict]:
-    """Call OpenAI-compatible API and parse JSON response."""
+def _is_ollama() -> bool:
+    """Detect if AI_BASE_URL points to a local Ollama instance."""
+    url = settings.AI_BASE_URL.lower()
+    return "11434" in url or settings.AI_API_KEY.lower() == "ollama"
+
+
+def _extract_json(content: str) -> dict:
+    """Extract the first JSON object from a string."""
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("```")[1]
+        if content.startswith("json"):
+            content = content[4:]
+    start = content.find("{")
+    end = content.rfind("}") + 1
+    if start != -1 and end > start:
+        content = content[start:end]
+    return json.loads(content)
+
+
+async def _call_ai_ollama(prompt: str, max_tokens: int = 400) -> Optional[dict]:
+    """Call Ollama native API with thinking disabled for fast responses."""
+    base = settings.AI_BASE_URL.rstrip("/")
+    # Strip /v1 suffix to get Ollama base URL
+    if base.endswith("/v1"):
+        base = base[:-3]
+    payload = {
+        "model": settings.AI_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "think": False,
+        "stream": False,
+        "options": {"temperature": 0.2, "num_predict": max_tokens},
+    }
+    async with httpx.AsyncClient(timeout=90) as client:
+        resp = await client.post(f"{base}/api/chat", json=payload)
+        resp.raise_for_status()
+        content = resp.json()["message"]["content"].strip()
+        return _extract_json(content)
+
+
+async def _call_ai_openai(prompt: str, max_tokens: int = 800) -> Optional[dict]:
+    """Call OpenAI-compatible API."""
     headers = {
         "Authorization": f"Bearer {settings.AI_API_KEY}",
         "Content-Type": "application/json",
@@ -91,15 +131,18 @@ async def _call_ai(prompt: str, max_tokens: int = 800) -> Optional[dict]:
         "max_tokens": max_tokens,
     }
     base_url = settings.AI_BASE_URL.rstrip("/")
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=90) as client:
         resp = await client.post(f"{base_url}/chat/completions", headers=headers, json=payload)
         resp.raise_for_status()
         content = resp.json()["choices"][0]["message"]["content"].strip()
-        if content.startswith("```"):
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
-        return json.loads(content)
+        return _extract_json(content)
+
+
+async def _call_ai(prompt: str, max_tokens: int = 800) -> Optional[dict]:
+    """Call AI API and parse JSON response. Auto-detects Ollama vs OpenAI."""
+    if _is_ollama():
+        return await _call_ai_ollama(prompt, max_tokens)
+    return await _call_ai_openai(prompt, max_tokens)
 
 
 async def translate_item(item: Item, lang: str = "简体中文") -> Optional[dict]:
@@ -115,7 +158,7 @@ async def translate_item(item: Item, lang: str = "简体中文") -> Optional[dic
         summary=(item.summary_raw or "")[:500],
     )
     try:
-        result = await _call_ai(prompt, max_tokens=400)
+        result = await _call_ai(prompt, max_tokens=300)
         if result and "title_zh" in result:
             return result
     except Exception as e:
