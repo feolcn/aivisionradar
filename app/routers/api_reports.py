@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
+
 from app.db import get_db
 from app.schemas import DailyReportOut, ItemOut
 from app.services.report_service import get_daily_report, render_markdown_report

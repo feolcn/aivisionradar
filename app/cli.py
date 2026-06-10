@@ -1,7 +1,7 @@
 """CLI entry point: python -m app.cli <command>"""
 import asyncio
-import sys
 import logging
+import sys
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def cmd_report():
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
-        print(f"Usage: python -m app.cli <command>")
+        print("Usage: python -m app.cli <command>")
         print(f"Commands: {', '.join(COMMANDS)}")
         sys.exit(1)
 

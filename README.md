@@ -2,9 +2,11 @@
 
 > 面向 AI 工程师、工业视觉工程师、边缘 AI 工程师的技术情报雷达系统
 
+[![CI](https://github.com/feolcn/aivisionradar/actions/workflows/ci.yml/badge.svg)](https://github.com/feolcn/aivisionradar/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green.svg)](https://fastapi.tiangolo.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-latest-green.svg)](https://fastapi.tiangolo.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/feolcn/aivisionradar?style=social)](https://github.com/feolcn/aivisionradar/stargazers)
 
 ## 项目介绍
 
@@ -12,9 +14,13 @@ AIVisionRadar 是一个开源的技术情报聚合与推荐系统。它自动抓
 
 **目标用户：** AI 工程师、工业视觉工程师、边缘 AI 工程师、技术内容创作者
 
-## 项目截图
+## 界面预览
 
-> 截图待补充（运行后访问 http://localhost:8000）
+| Dashboard 首页 | 情报列表 | 每日日报 |
+|:-:|:-:|:-:|
+| ![Dashboard](https://raw.githubusercontent.com/feolcn/aivisionradar/main/docs/screenshots/dashboard.png) | ![Items](https://raw.githubusercontent.com/feolcn/aivisionradar/main/docs/screenshots/items.png) | ![Report](https://raw.githubusercontent.com/feolcn/aivisionradar/main/docs/screenshots/report.png) |
+
+> 本地运行 `uvicorn app.main:app --reload` 后访问 http://localhost:8000 查看完整界面。
 
 ## 功能列表
 

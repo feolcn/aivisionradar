@@ -1,10 +1,12 @@
 import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+
 from app.config import settings
 from app.db import init_db
-from app.routers import web, api_items, api_sources, api_keywords, api_crawl, api_reports
+from app.routers import api_crawl, api_items, api_keywords, api_reports, api_sources, web
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,6 +19,7 @@ logger = logging.getLogger(__name__)
 def setup_scheduler(app: FastAPI) -> None:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.cron import CronTrigger
+
     from app.db import SessionLocal
     from app.services import crawl_service
 

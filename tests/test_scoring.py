@@ -1,10 +1,9 @@
-import pytest
 from app.models import Item, Keyword
 from app.services.scoring_service import (
-    compute_relevance_score,
-    compute_reproduce_score,
     compute_content_score,
     compute_monetization_score,
+    compute_relevance_score,
+    compute_reproduce_score,
     compute_total_score,
     score_item,
 )

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.db import get_db
 from app.models import Keyword
-from app.schemas import KeywordOut, KeywordCreate, KeywordUpdate
+from app.schemas import KeywordCreate, KeywordOut, KeywordUpdate
 
 router = APIRouter(prefix="/api/keywords", tags=["keywords"])
 

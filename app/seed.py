@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models import Source, Keyword
+
+from app.models import Keyword, Source
 
 DEFAULT_SOURCES = [
     {"name": "NVIDIA Technical Blog", "type": "rss", "url": "https://blogs.nvidia.com/feed/", "category": "ai_hardware"},

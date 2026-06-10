@@ -1,9 +1,8 @@
-import asyncio
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from app.db import get_db
-from app.services import crawl_service
-from app.services import summary_service
+from app.services import crawl_service, summary_service
 
 router = APIRouter(prefix="/api/crawl", tags=["crawl"])
 

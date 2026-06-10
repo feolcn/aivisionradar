@@ -1,5 +1,5 @@
-from typing import Optional
 from sqlalchemy.orm import Session
+
 from app.models import Item, Keyword
 
 INDUSTRIAL_KEYWORDS = {"defect", "anomaly", "inspection", "industrial", "fabric", "textile", "工业", "缺陷", "瑕疵", "检测"}

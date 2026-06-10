@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.db import get_db
 from app.models import Source
-from app.schemas import SourceOut, SourceCreate, SourceUpdate
+from app.schemas import SourceCreate, SourceOut, SourceUpdate
 
 router = APIRouter(prefix="/api/sources", tags=["sources"])
 

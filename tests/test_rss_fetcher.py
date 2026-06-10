@@ -1,6 +1,6 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from app.models import Item, Source
+
+from app.models import Source
 
 
 def make_source(name="Test RSS", url="https://example.com/feed", type="rss") -> Source:

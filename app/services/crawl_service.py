@@ -1,12 +1,14 @@
 import logging
+
 from sqlalchemy.orm import Session
+
 from app.models import Source
-from app.services.fetchers.rss_fetcher import fetch_rss
-from app.services.fetchers.arxiv_fetcher import fetch_arxiv
-from app.services.fetchers.github_trending_fetcher import fetch_github_trending
-from app.services.fetchers.github_search_fetcher import fetch_github_search
-from app.services.fetchers.huggingface_fetcher import fetch_huggingface
 from app.services import scoring_service
+from app.services.fetchers.arxiv_fetcher import fetch_arxiv
+from app.services.fetchers.github_search_fetcher import fetch_github_search
+from app.services.fetchers.github_trending_fetcher import fetch_github_trending
+from app.services.fetchers.huggingface_fetcher import fetch_huggingface
+from app.services.fetchers.rss_fetcher import fetch_rss
 
 logger = logging.getLogger(__name__)
 

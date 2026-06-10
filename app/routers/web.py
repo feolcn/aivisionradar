@@ -1,12 +1,14 @@
-from typing import Optional
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, Request, Form, HTTPException
-from fastapi.responses import RedirectResponse, PlainTextResponse
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.responses import PlainTextResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
 from app.db import get_db
-from app.models import Item, Source, Keyword
+from app.models import Item, Keyword, Source
 from app.services.report_service import get_daily_report, render_markdown_report
 
 router = APIRouter(tags=["web"])

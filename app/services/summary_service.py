@@ -1,8 +1,10 @@
 import logging
 from typing import Optional
+
 from sqlalchemy.orm import Session
-from app.models import Item
+
 from app.config import settings
+from app.models import Item
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +56,9 @@ def _make_fallback(item: Item) -> dict:
 
 async def _call_ai(title: str, url: str, summary: str, keywords: str) -> Optional[dict]:
     """Call OpenAI-compatible API for summary."""
-    import httpx
     import json
+
+    import httpx
 
     prompt = SUMMARY_PROMPT.format(
         title=title,

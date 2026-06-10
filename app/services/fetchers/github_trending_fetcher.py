@@ -1,9 +1,11 @@
 import logging
+
 import httpx
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
-from app.models import Item, Source
+
 from app.config import settings
+from app.models import Item, Source
 
 logger = logging.getLogger(__name__)
 
